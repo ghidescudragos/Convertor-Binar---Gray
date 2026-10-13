@@ -1,0 +1,98 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity binary_to_gray_sim is
+
+end binary_to_gray_sim;
+
+architecture Behavioral of binary_to_gray_sim is
+
+ 
+    COMPONENT binary_to_gray
+    port( 
+         sw       : in STD_LOGIC_VECTOR(7 downto 0);
+         led      : out STD_LOGIC_VECTOR(7 downto 0);
+         led_gray : out STD_LOGIC_VECTOR(7 downto 0);
+         clk_ext      : in std_logic;
+         load     : in std_logic;
+         clk_int  : in std_logic;
+         seg      : out STD_LOGIC_VECTOR(6 downto 0);
+         an       : out STD_LOGIC_VECTOR(3 downto 0)
+    );
+    END COMPONENT;
+
+   
+    signal s_sw           : std_logic_vector(7 downto 0) := (others => '0');
+    signal s_led          : std_logic_vector(7 downto 0);
+    signal s_led_int_gray : STD_LOGIC_VECTOR(7 downto 0) := (others => '0');
+    signal s_clk_ext          : std_logic := '0';
+    signal s_load         : std_logic := '0';
+    signal s_clk_int      : std_logic := '0';
+    signal s_seg          : STD_LOGIC_VECTOR(6 downto 0);
+    signal s_an           : STD_LOGIC_VECTOR(3 downto 0);
+    
+  
+    constant clk_int_period : time := 10 ns;
+
+begin
+    
+    uut: binary_to_gray PORT MAP (
+         sw       => s_sw,
+         led      => s_led,
+         led_gray => s_led_int_gray, 
+         clk_ext      => s_clk_ext,
+         load     => s_load,
+         clk_int  => s_clk_int,
+         seg      => s_seg,
+         an       => s_an
+    );
+
+    
+    clk_int_process : process
+    begin
+        s_clk_int <= '0';
+        wait for clk_int_period / 2;
+        s_clk_int <= '1';
+        wait for clk_int_period / 2;
+    end process;
+
+   
+    stim_proc: process
+    begin        
+        --Stare initiala
+        s_clk_ext <= '0';
+        s_load <= '0';
+        s_sw <= (others => '0');
+        wait for 100 ns;    
+        
+        --Setarea datelor si a semnalului LOAD
+        s_load <= '1'; 
+        s_sw <= "00000110"; -- Valoarea 6
+        wait for 50 ns; 
+        
+        --Generarea manuala a unui rising edge pe CLK pentru a încărca datele
+        s_clk_ext <= '1'; 
+        wait for 50 ns;
+        
+        --Schibam datele în timp ce ceasul e "sus"
+        s_sw <= "00001100"; -- Valoarea 12
+        wait for 50 ns;
+        
+        --Coboram ceasul 
+        s_clk_ext <= '0';
+        wait for 20 ns; -- Un mic timp mort pentru a se inregistra ulterior rising edge-ul
+        
+        --Schimbam datele inainte de următorul front crescator 
+        s_sw <= "00001100"; -- Valoarea 12
+        wait for 10 ns;     -- Din no un timp mort pentru a se stabili semnalul
+        
+        s_clk_ext <= '1';       --Acum ridicam ceasul ->se va încarca 12
+
+        wait for 50 ns;
+        s_clk_ext <= '0';
+        
+        --Oprim simularea
+        wait;
+    end process;
+
+end Behavioral;
